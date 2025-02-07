@@ -17,16 +17,16 @@
 ### VARIABLES ###
 
 # Full path to the FASTQ files.
-FASTQ_DIR=/data/intro_bioinformatics/fastq_merged
+FASTQ_DIR=/projects/baker-lab/rna/kzfp/fastqs
 
 #Sample file prefix.
 SAMPLE_PREFIX=SAMN122125
 
 # Full path to the FastQC output directory.
-OUTPUT_DIR=/projects/intro_bioinformatics/username/rnaseq/results/fastqc
+OUTPUT_DIR=/projects/baker-lab/rna/kzfp/fastqc
 
 # Full path to the FastQC container.
-CONTAINER=/home/opt/containers/intro_bioinformatics/fastqc.sif
+CONTAINER=/projects/baker-lab/rna/kzfp/fastqs/fastqc.sif
 
 
 ### PROGRAM ###
