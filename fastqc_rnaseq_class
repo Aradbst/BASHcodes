@@ -1,0 +1,48 @@
+#!/bin/bash
+#SBATCH -q batch   # job queue
+#SBATCH -N 1       # number of nodes
+#SBATCH -n 8       # number of cores
+#SBATCH --mem 50G  # memory for all cores
+#SBATCH -t 0-2:00  # time (D-HH:MM)
+
+################################################################################
+# Perform quality control on FASTQ files using FastQC.
+# https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+# 
+# Your Name
+# YYYY-MM-DD
+################################################################################
+
+
+### VARIABLES ###
+
+# Full path to the FASTQ files.
+FASTQ_DIR=/data/intro_bioinformatics/fastq_merged
+
+#Sample file prefix.
+SAMPLE_PREFIX=SAMN122125
+
+# Full path to the FastQC output directory.
+OUTPUT_DIR=/projects/intro_bioinformatics/username/rnaseq/results/fastqc
+
+# Full path to the FastQC container.
+CONTAINER=/home/opt/containers/intro_bioinformatics/fastqc.sif
+
+
+### PROGRAM ###
+
+# Load Singularity
+module load singularity
+
+# Explicity mount /flashscratch, /projects, and /data
+export SINGULARITY_BIND="/flashscratch,/projects,/data"
+
+# Run FastQC on FASTQ files.
+for NUMBER in {13..27}
+do
+    echo Processing Sample ${NUMBER}...
+    
+    SAMPLE=${SAMPLE_PREFIX}${NUMBER}
+    
+    singularity exec ${CONTAINER} fastqc --outdir ${OUTPUT_DIR} ${FASTQ_DIR}/${SAMPLE}_1.fastq.gz ${FASTQ_DIR}/${SAMPLE}_2.fastq.gz
+done
