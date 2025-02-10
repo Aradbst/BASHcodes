@@ -1,6 +1,6 @@
 # BASHcodes
 
-# /projects/baker-lab/containers/fastqc/0.11.9.sif
+# /projects/baker-lab/rna/kzfp/fastqs/fastqc.sif
 01.runArray_FastQC.slurm 
 I want to store my codes here
   GNU nano 5.6.1                                                                                                                      01.runArray_FastQC.slurm
