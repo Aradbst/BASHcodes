@@ -28,6 +28,18 @@ OUTPUT_DIR=/projects/baker-lab/rna/kzfp/fastqc
 # Full path to the FastQC container.
 CONTAINER=/projects/baker-lab/rna/kzfp/fastqs/fastqc.sif
 
+# List of sample file prefixes.
+SAMPLES=(
+    "RNA12_GT24-12486_ACTCCATC-GATCAAGG_S221_L008"
+    "RNA14_GT24-12488_CGTGTGTA-CCAACGAA_S207_L008"
+    "RNA8_GT24-12482_ACGTTCAG-AGTTGTGC_S218_L008"
+    "RNA10_GT24-12484_TTGCAGAC-ATCGTGGT_S222_L008"
+    "RNA15_GT24-12489_ACGACTTG-AACAGCGA_S202_L008"
+    "RNA13_GT24-12487_GTTGACCT-CAGTGCTT_S198_L008"
+    "RNA9_GT24-12483_CAGTCCAA-CGGTAATC_S223_L008"
+    "RNA11_GT24-12485_CAATGTGG-TCTTCGAC_S216_L008"
+    "RNA7_GT24-12481_AACGTCTG-AATGACGC_S204_L008"
+)
 
 ### PROGRAM ###
 
@@ -35,10 +47,10 @@ CONTAINER=/projects/baker-lab/rna/kzfp/fastqs/fastqc.sif
 module load singularity
 
 # Explicity mount /flashscratch, /projects, and /data
-export SINGULARITY_BIND="/flashscratch,/projects,/data"
+export SINGULARITY_BIND="/projects/baker-lab"
 
 # Run FastQC on FASTQ files.
-for NUMBER in {13..27}
+for SAMPLE in "${SAMPLES[@]}"
 do
     echo Processing Sample ${NUMBER}...
     
