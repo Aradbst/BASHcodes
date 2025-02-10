@@ -1,0 +1,460 @@
+Code Activity: FastQC & MulitQC
+CV & AW
+Updated: 02/05/2025
+
+
+Introduction
+In this lesson, you will perform quality checks on FASTQ sequence files using the FastQC program in the fastqc container. We will then use the MultiQC program to merge the FastQC output files and examine all data in one report.
+
+Throughout the course, we will call programs to run specific tasks or jobs on our GCP remote server. We will run our programs using bash scripts on our GCP environment, which runs the Slurm workload manager and the Singularity HPC environment manager.
+
+Template bash scripts are located in /projects/intro_bioinformatics/student_scripts. Singularity is available as a module on our GCP environment, and Singularity containers have been built and stored for the course on /home/opt/containers/intro_bioinformatics.
+
+
+
+Remember, these code tutorials provide step-by-step instruction for completing our computational tasks. You can use it to copy-paste from the code blocks provided directly into your command line interface. But pay attention! There are portions of the tutorial that are left generic, where each student is expected to fill in specifics for their directories and files.
+
+Be sure to carefully check all commands before running them, including looking for simple typos or spacing mistakes!
+
+
+
+
+Log on to HPC environment
+Connect to the course login node via ssh or via PuTTY.
+
+
+
+
+Part 1: Check your directory structure
+In the previous activities, you built a personal working space for your project. Using a series of commands on the command line, you will confirm that your directory is set up correctly before beginning analysis.
+
+
+
+1a. Check the structure of your personal directory
+First, move inside your personal projects directory.
+
+In the code below, replace username with the 6-letter username you created.
+
+cd /projects/intro_bioinformatics/username
+Then, use the cd, ls, and mkdir commands to ensure your personal directory has the following structure:
+
+/projects
+    /intro_bioinformatics
+        /username
+            /rnaseq
+                /results
+                /scripts
+                /docs
+
+
+1b. Make a folder for your FastQC results
+Finally, make a directory to store the outputs of the FastQC program. Navigate to your results directory using cd.
+
+In the code below, replace username with the 6-letter username you created.
+
+cd /projects/intro_bioinformatics/username/rnaseq/results
+
+
+Then, use mkdir to create a fastqc directory.
+
+mkdir fastqc
+
+
+
+Part 2: Prepare FastQC script for your files
+We will provide template bash scripts for each major step of our analysis pipeline. Next, you will copy the FastQC script template provided and edit it for you own use.
+
+
+
+2a. Copy the FastQC script template to your personal scripts directory.
+Move to your personal scripts directory using cd. Either use the full path, as in the command below, or use relative file paths from your current location.
+
+In the code below, replace username with the name of your personal working directory.
+
+cd /projects/intro_bioinformatics/username/rnaseq/scripts
+
+
+Copy the FastQC script to your personal scripts directory. Recall the formula for copying files: command /path/to/file/current/location /path/to/destination
+
+Note: The period at the end of the command represents your current working directory, which should be /projects/intro_bioinformatics/username/rnaseq/scripts
+
+cp /projects/intro_bioinformatics/student_scripts/_1_run_fastqc.sh .
+
+
+Confirm that the file has copied to your personal rnaseq/scripts directory.
+
+ls
+
+
+2b. Edit the FastQC script
+Using the command line editor nano, open the FastQC script to begin modifying it.
+
+nano _1_run_fastqc.sh
+
+
+You should see your command line screen fill with the code block below.
+
+#!/bin/bash
+#SBATCH -q batch   # job queue
+#SBATCH -N 1       # number of nodes
+#SBATCH -n 8       # number of cores
+#SBATCH --mem 50G  # memory for all cores
+#SBATCH -t 0-2:00  # time (D-HH:MM)
+
+################################################################################
+# Perform quality control on FASTQ files using FastQC.
+# https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+# 
+# Your Name
+# YYYY-MM-DD
+################################################################################
+
+
+### VARIABLES ###
+
+# Full path to the FASTQ files.
+FASTQ_DIR=/data/intro_bioinformatics/fastq_merged
+
+#Sample file prefix.
+SAMPLE_PREFIX=SAMN122125
+
+# Full path to the FastQC output directory.
+OUTPUT_DIR=/projects/intro_bioinformatics/username/rnaseq/results/fastqc
+
+# Full path to the FastQC container.
+CONTAINER=/home/opt/containers/intro_bioinformatics/fastqc.sif
+
+
+### PROGRAM ###
+
+# Load Singularity
+module load singularity
+
+# Explicity mount /flashscratch, /projects, and /data
+export SINGULARITY_BIND="/flashscratch,/projects,/data"
+
+# Run FastQC on FASTQ files.
+for NUMBER in {13..27}
+do
+    echo Processing Sample ${NUMBER}...
+    
+    SAMPLE=${SAMPLE_PREFIX}${NUMBER}
+    
+    singularity exec ${CONTAINER} fastqc --outdir ${OUTPUT_DIR} ${FASTQ_DIR}/${SAMPLE}_1.fastq.gz ${FASTQ_DIR}/${SAMPLE}_2.fastq.gz
+done
+
+
+Using the arrow keys on your keyboard, navigate around the script in the nano editor.
+
+Change the following fields to include your specific details:
+
+Your Name
+Today’s date in YYYY-MM-DD format
+Your FASTQ sample numbers (do not run FastQC on all 15 of the samples!)
+Your output directory
+
+
+Notice the script structure, first setting up variables then calling the program into action. Comments denoted by the hashtag # symbol serve as notes that will not be executed as commands.
+
+
+
+Save the file by following the on-screen command keyboard shortcut control + X to Exit.
+
+
+
+Check to see your file was saved. The cat command will concatenate your file and print it to the screen.
+
+cat _1_run_fastqc.sh
+
+
+You are ready to run your FastQC bash script!
+
+
+
+
+Part 3: Perform quality control on FASTQ files with FastQC
+Use the command line to submit the bash script to call the fastqc container and execute the FastQC program on your FASTQ files.
+
+
+
+3a. Move to flashscratch
+The flashscratch filesystem is for temporary storage during data analysis. Move to the flashscratch filesystem.
+
+cd /flashscratch
+
+
+Make a temporary directory for yourself using your six letter username.
+
+In the code below, replace username with the name of your personal working directory.
+
+mkdir -p username
+Note: the -p flag tells mkdir not to give an error if the folder already exists, and to make parent directories as needed.
+
+
+
+Use the cd command to move inside your new directory.
+
+In the code below, replace username with the name of your personal working directory.
+
+cd username
+
+
+3b. Run the script
+Use the Slurm command sbatch to submit the FastQC script to the Slurm queue.
+
+sbatch /path/to/your/script/_1_run_fastqc.sh
+
+
+Use the Slurm squeue command to check whether the job is running. The -u flag tells squeue to only display jobs for a specified user.
+
+In the code below, replace student0 with your student number.
+
+squeue -u student0
+
+
+Keep checking the job status periodically until the ST column changes to R, indicating that your job is running. This may take a few minutes.
+
+
+
+Once your job has started running, check for the output file from your Slurm job submission in your /flashscratch/username folder using ls. For each job you submit via sbatch, Slurm will direct any output or error messages to a file called slurm-###.out, where ### is your job ID. Use cat to view the contents of the file and confirm that the job is running appropriately.
+
+In the code below, replace ### with your job ID.
+
+cat slurm-###.out
+
+
+Depending on how soon you check the file, it will likely only say “Processing Sample ##…”, where ## is the first of your assigned sample numbers.
+
+
+
+Submitting a job allows you to disconnect from the HPC environment without compromising the computational task. Running FastQC on two samples will likely take ~30 minutes. If you’d like, you can disconnect from the GCP and reconnect at a later time when your results are ready.
+
+
+
+3c. Check the script outputs
+Once your job has completed (you can confirm this with squeue), check the slurm-###.out output log file. You can use cat, or you can try out the less command, which displays the contents of a file without printing them to the screen. This is particularly useful for longer files.
+
+less slurm-###.out
+Some common commands for navigating a file using less include:
+
+Command	Description
+q	Exits the less command
+g or Home	Jumps to the first line
+G or End	Jumps to the last line
+Space or Page Down	Move forward one page
+b or Page Up	Move back one page
+Down Arrow, Enter, e, or j	Move forward one line
+Up Arrow, y, or k	Move backward one line
+/	Forward search for text following /
+?	Backward search for text following ?
+n	Next matching search item
+N	Previous matching search item
+When you are finished checking the output file, press q to exit less.
+
+
+
+If all four runs are complete, check that the output files are present in your directory.
+
+ls /projects/intro_bioinformatics/username/rnaseq/results/fastqc
+NOTE: You should see an .html output file from the FastQC program, as well as a compressed .zip file, for each FASTQ file input.
+
+
+
+
+Part 4: Prepare MultiQC script for your files
+Template bash scripts were created for each major step of our analysis pipeline. You will copy the MultiQC script provided and edit it for you own use.
+
+
+
+4a. Copy the MultiQC script to your personal /scripts directory
+Following steps similar to above, copy the MultiQC script _2_run_multiqc.sh to your personal /scripts directory. Check that the script copied.
+
+
+
+4b. Edit the MultiQC script
+Using the command line editor nano, open the MultiQC script to begin modifying it. You should see your command line screen fill with the code block below.
+
+#!/bin/bash
+
+################################################################################
+# Run MultiQC on existing FastQC files to summarize all results.
+# https://multiqc.info/
+#
+# Your Name
+# YYYY-MM-DD
+################################################################################
+
+
+### VARIABLES ###
+
+# Full path to the FastQC directory.
+FASTQC_DIR=/projects/intro_bioinformatics/username/rnaseq/results/fastqc/
+
+# Full path to the MultiQC container.
+CONTAINER=/home/opt/containers/intro_bioinformatics/multiqc.sif
+
+### PROGRAM ###
+
+# Load Singularity
+module load singularity
+
+# Explicity mount /flashscratch, /projects, and data
+export SINGULARITY_BIND="/flashscratch,/projects,/data"
+
+# Run MultiQC on all FastQC files.
+singularity exec ${CONTAINER} multiqc --outdir ${FASTQC_DIR} ${FASTQC_DIR}
+Using the arrow keys on your keyboard, navigate around the script in the nano editor to change the appropriate fields.
+
+
+
+Save the file by following the on-screen command keyboard shortcut control + X to Exit.
+
+
+
+Check that your file was saved.
+
+
+
+
+Part 5: Generate merged FastQC reports with MultiQC
+The MultiQC program merges all FastQC outputs into one report, to facilitate viewing and analyses of FastQC results.
+
+
+
+5a. Move into your temporary /flashscratch directory
+If you are not already there, move to the /flashscratch/username directory you created earlier.
+
+
+
+5b. Begin an interactive session
+Since the MultiQC program has one of the shortest run times of the programs we will use in this course, we will use the MultiQC analysis to practice running an interactive bash session.
+
+Here we are specifying requirements for the interactive session, like 8 cores and a memory of 50 gigabytes. This changes your location to a compute node. You will be able to run commands in real time on this compute node.
+
+srun --pty -q batch -c 8 --mem=50G bash -i
+NOTE: Location will change from the login node to a compute node. It may take several minutes for the compute node to turn on.
+
+
+
+5c. Run the script
+Since we started an interactive session, we can call our bash script file directly. It will run the script specified in real time.
+
+In the code below, replace the path with the proper path to your MultiQC bash script.
+
+bash /path/to/your/script/_2_run_multiqc.sh
+
+
+As the MultiQC program runs, progress will be printed to the screen instead of an output log file.
+
+
+
+Do not navigate away or turn off your computer until the MultiQC run is complete. This command runs in real time.
+
+If, for any reason, you need to cancel running your script, use the shortcut Ctrl+C. This terminal shortcut will terminate any ongoing processes.
+
+
+
+Once the MultiQC program completes, check that the output files are present in your results/fastqc directory.
+
+NOTE: You should see one .html output file from the MultiQC program and one multiqc_data directory.
+
+
+
+Then, type exit to end your interactive session and return to the login node.
+
+exit
+
+
+
+Part 6: Access and view output files
+
+
+6a. Check file names and locations
+Record the output file names and paths. These will be important if you opt to transfer the files to your local computer.
+
+
+
+6b. Access the output files or save them to your local computer.
+In order to view the .html output files, we will need access to a program that can display .html files, either on our local computer (i.e. a web browser) or via RStudio.
+
+
+
+Option 1: Access via RStudio on the GCP cluster
+Start an Rstudio session via the GCP cluster.
+
+module load rstudio
+sbatch rstudio-session.job
+
+
+Once the RStudio session job is running, follow the instructions in the rstudio-server.job.### file to connect to RStudio.
+
+
+
+In the Files pane of RStudio, navigate to your results/fastqc directory. Select the .html file that you would like to open, then select View in web browser.
+
+
+
+
+
+Once you have opened the file in your web browser, you can save it to your local computer as an .html file.
+
+
+
+
+Option 2a: Transfer files to your local computer via scp
+Open a new command line program. Do not log in to the GCP. Direct your computer to securely copy indicated files from the GCP with the scp command.
+
+In the code below, replace student0 with your student number, and replace the file path with the full path to your FastQC and MultiQC reports.
+
+scp -P 2222 student0@34.74.73.194:/path/to/your/files/on/GCP/*.html /path/to/store/files/on/local/computer
+
+
+As an example, the completed command might look like:
+
+scp -P 2222 student0@34.74.73.194:/projects/intro_bioinformatics/wnoroa/rnaseq/results/fastqc/*.html C:/Users/wnoroa/Desktop/fastqc
+
+
+NOTE: Only transfer the .html output files. Using the * wildcard tells the computer that you want to transfer all of the files in the specified folder that end in .html.
+
+On Macs, the full path on your local computer will likely be something like /Users/vallic/Downloads. On Windows, it will likely be something like C:/Users/wnoroa/Downloads. You can specify any location that you would like. Make sure that you use forward slashes in your file path.
+
+You may be prompted to confirm the host key, and you will be prompted to enter your GCP password.
+
+
+
+Do not navigate away or turn off your computer until the transfer is complete. This command runs in real time.
+
+
+
+Locate the files on your local computer and open them using your web browser.
+
+
+
+Option 2b: Transfer files to your local computer via PuTTY
+In order to transfer files using PuTTY, you will need to have installed the full version of PuTTY or downloaded pscp.exe. Before beginning, identify the full path to the PSCP program file on your local computer.
+
+Open a new command line program. Do not log in to the GCP. Direct your computer to securely copy indicated files from the GCP with the pscp.exe program.
+
+In the code below, replace student0 with your student number, and replace the file paths with the corresponding full paths for each prompt.
+
+/path/to/pscp.exe -P 2222 student0@34.74.73.194:/path/to/your/files/on/GCP/*.html /path/to/store/files/on/local/computer
+
+
+As an example, the completed command might look like:
+
+C:/Users/wnoroa/Desktop/pscp.exe -P 2222 student0@34.74.73.194:/projects/intro_bioinformatics/wnoroa/rnaseq/results/fastqc/*.html C:/Users/wnoroa/Desktop/fastqc
+
+
+NOTE: Only transfer the .html output files. Using the * wildcard tells the computer that you want to transfer all of the files in the specified folder that end in .html.
+
+On Macs, the full path on your local computer will likely be something like /Users/vallic/Downloads. On Windows, it will likely be something like C:/Users/wnoroa/Downloads. You can specify any location that you would like. Make sure that you use forward slashes / in your file path.
+
+You may be prompted to confirm the host key, and you will be prompted to enter your GCP password.
+
+
+
+Do not navigate away or turn off your computer until the transfer is complete. This command runs in real time.
+
+
+
+Locate the files on your local computer and open them using your web browser
