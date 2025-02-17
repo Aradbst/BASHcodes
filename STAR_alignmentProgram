@@ -1,0 +1,256 @@
+Introduction
+In this module we learn how to align RNA-seq reads. You will use the STAR alignment program in the star_rsem container.
+
+Recall that we will call programs to run specific jobs on GCP. We will run our programs using bash scripts, through the Slurm workload manager and the Singularity HPC environment manager.
+
+Reference genome files for the mouse GRCm39 genome build are stored in /projects/education/GRCm39 and sub-directories. In this lesson, you will align your assigned samples, but we will call upon the original FASTQ files in our shared /projects/education fastq_merged directory. Template bash scripts are located in /projects/education/rnaseq/student_scripts. Singularity containers have been built and stored for the course on /projects/education/containers.
+
+
+
+We recommend having your lab notebook open as you are running through the commands, so you can track your progress, record important file and folder paths, and note any errors.
+
+
+
+Remember, these code tutorials provide step-by-step instruction for completing our computational tasks. You can use it to copy-paste from the code blocks provided directly into your command line interface. But pay attention! There are portions of the tutorial that are left generic, where each student is expected to fill in specifics for their directories and files.
+
+Be sure to carefully check all commands before running them. Even a simple typo or spacing mistake can lead to a command line failure.
+
+
+
+
+Log on to HPC environment
+Connect to the course login node via ssh or via PuTTY.
+
+
+
+
+Part 1: Check your directory structure
+In the previous activities, you built a personal working space for your project. After confirming that your working space is set up, create a new directory for the alignment step before beginning analysis.
+
+
+
+1a. Check the structure of your personal directory
+First, move inside your personal projects directory. Use the cd, ls, and mkdir commands to ensure your personal directory has the following structure:
+
+/projects
+    /intro_bioinformatics
+        /username
+            /rnaseq
+                /results
+                /scripts
+                /docs
+
+
+1b. Make a folder for your STAR results
+Next, make a directory to store the outputs of the STAR program. Navigate to your results directory using cd.
+
+In the code below, replace username with the 6-letter username you created.
+
+cd /projects/intro_bioinformatics/username/rnaseq/results
+
+
+Then, use mkdir to create a star directory.
+
+mkdir star
+
+
+
+Part 2: Prepare STAR script for your files
+Use the template bash script provided for the STAR alignment step of the pipeline. Copy the STAR script template and edit it for you own use.
+
+
+
+2a. Copy the STAR script template to your personal scripts directory.
+Move to your personal scripts directory using cd. Either use the full path, as in the command below, or use relative file paths from your current location.
+
+In the code below, replace username with the name of your personal working directory.
+
+cd /projects/intro_bioinformatics/username/rnaseq/scripts
+
+
+Copy the STAR script to your personal scripts directory. Recall the formula for copying files: command /path/to/file/current/location /path/to/destination
+
+Note: The period at the end of the command represents your current working directory, which should be /projects/intro_bioinformatics/username/rnaseq/scripts
+
+cp /projects/intro_bioinformatics/student_scripts/_3_star_align.sh .
+
+
+Confirm that the file has copied to your personal rnaseq/scripts directory.
+
+
+
+2b. Edit the STAR script
+Using the command line editor nano, open the STAR script to begin modifying it. You should see your command line screen fill with the code block below.
+
+#!/bin/bash
+#SBATCH -q batch   # job queue
+#SBATCH -N 1       # number of nodes
+#SBATCH -n 8       # number of cores
+#SBATCH --mem 50G  # memory for all cores
+#SBATCH -t 0-24:00  # time (D-HH:MM)
+
+################################################################################
+# Align the reads in the FASTQ files to the mouse genome, informed by the 
+# mouse transcripts, using STAR.
+# https://github.com/alexdobin/STAR
+#
+# Your Name
+# YYYY-MM-DD
+################################################################################
+
+
+### VARIABLES ###
+
+# Full path to the directory where FASTQ files are stored.
+FASTQ_DIR=/data/intro_bioinformatics/fastq_merged
+
+# Sample file prefix
+SAMPLE_PREFIX=SAMN122125
+
+# Full path to the directory where the STAR genome index is stored.
+GENOME_DIR=/data/intro_bioinformatics/GRCm39/rsem_index
+
+# Full path to the directory where STAR output will be written.
+OUTPUT_DIR=/projects/intro_bioinformatics/username/rnaseq/results/star
+
+# Full path to STAR container.
+CONTAINER=/home/opt/containers/intro_bioinformatics/star_rsem.sif
+
+# Set temporary directory.
+TEMP_DIR=~/temp
+
+### PROGRAM ###
+
+# Load Singularity
+module load singularity
+
+# Explicity mount /flashscratch, /projects, and /data
+export SINGULARITY_BIND="/flashscratch,/projects,/data"
+
+# Make output directory 
+mkdir -p ${OUTPUT_DIR}
+
+# Loop through each sample and run STAR.
+for NUMBER in {startnumber..endnumber}
+do
+  echo Aligning sample ${NUMBER}
+
+  SAMPLE=${SAMPLE_PREFIX}${NUMBER}
+
+  singularity exec ${CONTAINER} STAR --runThreadN 8 \
+                                     --readFilesIn ${FASTQ_DIR}/${SAMPLE}_1.fastq.gz ${FASTQ_DIR}/${SAMPLE}_2.fastq.gz \
+                                     --readFilesCommand zcat \
+                                     --genomeDir ${GENOME_DIR} \
+                                     --alignSJoverhangMin 20 \
+                                     --alignSJDBoverhangMin 1 \
+                                     --outFilterMismatchNmax 4 \
+                                     --outFileNamePrefix ${OUTPUT_DIR}/${SAMPLE}_ \
+                                     --outFilterType BySJout \
+                                     --outSAMtype BAM SortedByCoordinate \
+                                     --outSAMunmapped Within \
+                                     --outSAMattributes Standard \
+                                             --outTmpDir ${TEMP_DIR} \
+                                     --quantMode TranscriptomeSAM
+
+  rm -r ${TEMP_DIR}
+
+done
+
+s
+
+Using the arrow keys on your keyboard, navigate around the script in the nano editor.
+
+Change the following fields to include your specific details:
+
+Your Name
+Today’s date in YYYY-MM-DD format
+Your assigned FASTQ sample numbers
+Your output directory
+
+
+Recall the script structure, first setting up variables then calling the program into action. Comments denoted by the hash # symbol serve as notes that will not be executed as commands.
+
+
+
+Save the file and exit nano.
+
+
+
+Check to see your file was saved. The cat command will concatenate your file and print it to the screen.
+
+cat _3_star_align.sh
+Part 3: Perform alignment on FASTQ files with STAR
+Use the command line to submit the bash script to call the star_rsem container and execute the STAR program on your FASTQ files.
+
+
+
+3a. Move to flashscratch
+Recall that the flashscratch filesystem is for temporary execution and storage during data analysis.
+
+Move to the flashscratch filesystem.
+
+Make a temporary directory for yourself using your six letter username.
+
+In the code below, replace username with the name of your personal working directory.
+
+mkdir -p username
+Note: the -p flag tells mkdir not to give an error if the folder already exists, and to make parent directories as needed.
+
+Move inside your new directory.
+
+
+
+3b. Run the scripts
+Use the Slurm command sbatch to submit your STAR bash script to the Slurm queue.
+
+Ensure you are running your script that you edited in Part 2, not the template script.
+
+
+
+Use the Slurm squeue command to check whether the job is running. Recall that the -u flag tells squeue to only display jobs for a specified user.
+
+In the code below, replace student0 with your student number.
+
+squeue -u student0
+
+
+Keep checking the job status periodically until the ST status column changes to R, indicating that your job is running. This may take a few minutes.
+
+
+
+Once your job has started running, check for the output file from your Slurm job submission in your /flashscratch/username folder. For each job you submit via sbatch, Slurm will direct any output or error messages to a file called slurm-###.out, where ### is your job ID. Use cat to view the contents of the file and confirm that the job is running appropriately.
+
+In the code below, replace ### with your job ID.
+
+cat slurm-###.out
+
+
+Recall that submitting a job allows you to disconnect from the HPC environment without compromising the computational task. Running STAR on two paired-end samples will likely take ~30 minutes per sample. You may want to disconnect from the GCP and reconnect at a later time when your results are ready.
+
+
+
+Part 4: Access output files
+
+
+4a. Check files
+Navigate to your results directory to view the files from your completed STAR run. You should see a number of output files, including the aligned .bam files and .Log output files.
+
+The .bam files are your aligned files, one per sample. Note the size of these files by using the ls -lh command, which tells the computer to long-list the contents of the directory in human-readable form. You should see each .bam file is several GB in size.
+
+There are several .Log files containing notes about the STAR run. The .Log.final.out file for each sample gives the best summary, and will be used for class discussion.
+
+
+
+4b. Review and interpret STAR aligner performance
+View the .Log.final.out file for each sample using your method of choice (for example, you could use cat to print the contents to the screen) and record the key points in your lab notebook.
+
+Record your impression about the STAR aligner performance for each sample in your lab notebook.
+
+
+
+Canvas submission
+Follow the instructions on Canvas to submit the knit .html version of your R Markdown lab notebook as this week’s assignment.
+
+
+
+Note: Did you have trouble? Were you unable to follow these steps, or did you get an error? Take a screenshot of the error and submit that for your assignment, so we can address your issues this week.
