@@ -94,15 +94,15 @@ Using the command line editor nano, open the STAR script to begin modifying it. 
 # mouse transcripts, using STAR.
 # https://github.com/alexdobin/STAR
 #
-# Your Name
-# YYYY-MM-DD
+# Arad Bustan
+# 2025-02-20
 ################################################################################
 
 
 ### VARIABLES ###
 
 # Full path to the directory where FASTQ files are stored.
-FASTQ_DIR=/data/intro_bioinformatics/fastq_merged
+FASTQ_DIR=/projects/baker-lab/rna/kzfp/fastqs
 
 # Sample file prefix
 SAMPLE_PREFIX=SAMN122125
